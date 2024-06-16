@@ -1,4 +1,5 @@
 #include "ThreadPool.h"
+#include <csignal>
 #include <iostream>
 #include <unistd.h>
 
@@ -65,6 +66,7 @@ void SignalHelper(int signal) { run_application = false; }
 
 int main(int argc, char *argv[]) {
   run_application = true;
+  std::signal(SIGINT, SignalHelper);
   int *cores = new int[2];
   cores[0] = 0;
   cores[1] = 1;
