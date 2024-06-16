@@ -16,6 +16,7 @@ private:
   };
 
   volatile bool keep_running;
+  volatile bool start_running_tasks;
   const int total_threads;
   int core_iter;
   pthread_spinlock_t sp;
@@ -44,6 +45,9 @@ private:
 
     AssignCore(core_iter);
 
+    while (!start_running_tasks) {
+    }
+
     while (keep_running) {
       void *(*taskFuncPtr)(void *);
       void *arg;
@@ -67,6 +71,8 @@ public:
       : cores(cores_), total_threads(total_threads_), core_iter(0),
         keep_running(true) {
 
+    start_running_tasks = false;
+
     pthread_spin_init(&sp, PTHREAD_PROCESS_PRIVATE);
 
     threads = new pthread_t[total_threads];
@@ -74,6 +80,17 @@ public:
     for (int i = 0; i < total_threads; i++) {
       pthread_create(&threads[i], nullptr, thread_run_helper, this);
     }
+
+    while (true) {
+      pthread_spin_lock(&sp);
+      int core_iter_ = core_iter;
+      pthread_spin_unlock(&sp);
+      if (core_iter_ == total_threads) {
+        break;
+      }
+    }
+
+    start_running_tasks = true;
   }
   ~ThreadPool() {
 
