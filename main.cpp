@@ -2,31 +2,33 @@
 #include <iostream>
 #include <unistd.h>
 
+volatile bool run_application;
+
 void *thread_helper(void *arg) {
   std::cout << " Hi from thread helper" << std::endl;
   return nullptr;
 }
 
-class Testing {
+class Example {
 public:
   struct ThreadPoolHelper {
-    Testing *test;
+    Example *test;
     int to_run;
-    ThreadPoolHelper(Testing *test_, int to_run_)
+    ThreadPoolHelper(Example *test_, int to_run_)
         : test(test_), to_run(to_run_) {}
   };
 
-  Testing(ThreadPool *th_, int k) : th(th_) {
+  Example(ThreadPool *th_, int k) : th(th_) {
     t = new ThreadPoolHelper(this, k);
     AddTaskToQueue();
   };
-  Testing(Testing &&) = default;
-  Testing(const Testing &) = default;
-  Testing &operator=(Testing &&) = default;
-  Testing &operator=(const Testing &) = default;
-  ~Testing() { delete t; };
+  Example(Example &&) = default;
+  Example(const Example &) = default;
+  Example &operator=(Example &&) = default;
+  Example &operator=(const Example &) = default;
+  ~Example() { delete t; };
 
-  inline void AddTaskToQueue() noexcept { th->EnqueTask(&Testing::run, t); }
+  inline void AddTaskToQueue() noexcept { th->EnqueTask(&Example::run, t); }
 
 private:
   inline void run_helper(int i) noexcept {
@@ -59,18 +61,22 @@ private:
   ThreadPoolHelper *t;
 };
 
+void SignalHelper(int signal) { run_application = false; }
+
 int main(int argc, char *argv[]) {
+  run_application = true;
   int *cores = new int[2];
   cores[0] = 0;
   cores[1] = 1;
   ThreadPool *th = new ThreadPool(cores, 2);
   th->EnqueTask(thread_helper, nullptr);
-  Testing testing(th, 0);
-  Testing testing1(th, 1);
-  Testing testing2(th, 2);
-  Testing testing3(th, 3);
-  Testing testing4(th, 4);
-  sleep(5);
+  Example testing(th, 0);
+  Example testing1(th, 1);
+  Example testing2(th, 2);
+  Example testing3(th, 3);
+  Example testing4(th, 4);
+  while (run_application) {
+  }
   delete th;
   delete[] cores;
   return 0;
