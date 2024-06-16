@@ -62,7 +62,10 @@ private:
   ThreadPoolHelper *t;
 };
 
-void SignalHelper(int signal) { run_application = false; }
+void SignalHelper(int signal) {
+  std::cout << " Got kill signal" << std::endl;
+  run_application = false;
+}
 
 int main(int argc, char *argv[]) {
   run_application = true;
@@ -77,8 +80,10 @@ int main(int argc, char *argv[]) {
   Example testing2(th, 2);
   Example testing3(th, 3);
   Example testing4(th, 4);
+  std::cout << "Infinite loop starting" << std::endl;
   while (run_application) {
   }
+  std::cout << "Thread Pool Deleting" << std::endl;
   delete th;
   delete[] cores;
   return 0;
