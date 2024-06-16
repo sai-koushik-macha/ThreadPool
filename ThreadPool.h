@@ -6,6 +6,52 @@
 #include <sched.h>
 
 class ThreadPool {
+public:
+  ThreadPool(int *cores_, int total_threads_)
+      : cores(cores_), total_threads(total_threads_), core_iter(0),
+        keep_running(true) {
+
+    start_running_tasks = false;
+
+    pthread_spin_init(&sp, PTHREAD_PROCESS_PRIVATE);
+
+    threads = new pthread_t[total_threads];
+
+    for (int i = 0; i < total_threads; i++) {
+      pthread_create(&threads[i], nullptr, thread_run_helper, this);
+    }
+
+    while (true) {
+      pthread_spin_lock(&sp);
+      int core_iter_ = core_iter;
+      pthread_spin_unlock(&sp);
+      if (core_iter_ == total_threads) {
+        break;
+      }
+    }
+
+    start_running_tasks = true;
+  }
+  ~ThreadPool() {
+
+    keep_running = false;
+
+    for (int i = 0; i < total_threads; i++) {
+      pthread_join(threads[i], nullptr);
+    }
+
+    delete[] threads;
+
+    pthread_spin_destroy(&sp);
+  }
+
+  inline void EnqueTask(void *(*const taskFuncPtr)(void *),
+                        void *const arg) noexcept {
+    pthread_spin_lock(&sp);
+    tasks_queue.emplace_back(taskFuncPtr, arg);
+    pthread_spin_unlock(&sp);
+  }
+
 private:
   struct Task {
     void *(*const taskFuncPtr)(void *);
@@ -64,52 +110,6 @@ private:
         taskFuncPtr(arg);
       }
     }
-  }
-
-public:
-  ThreadPool(int *cores_, int total_threads_)
-      : cores(cores_), total_threads(total_threads_), core_iter(0),
-        keep_running(true) {
-
-    start_running_tasks = false;
-
-    pthread_spin_init(&sp, PTHREAD_PROCESS_PRIVATE);
-
-    threads = new pthread_t[total_threads];
-
-    for (int i = 0; i < total_threads; i++) {
-      pthread_create(&threads[i], nullptr, thread_run_helper, this);
-    }
-
-    while (true) {
-      pthread_spin_lock(&sp);
-      int core_iter_ = core_iter;
-      pthread_spin_unlock(&sp);
-      if (core_iter_ == total_threads) {
-        break;
-      }
-    }
-
-    start_running_tasks = true;
-  }
-  ~ThreadPool() {
-
-    keep_running = false;
-
-    for (int i = 0; i < total_threads; i++) {
-      pthread_join(threads[i], nullptr);
-    }
-
-    delete[] threads;
-
-    pthread_spin_destroy(&sp);
-  }
-
-  inline void EnqueTask(void *(*const taskFuncPtr)(void *),
-                        void *const arg) noexcept {
-    pthread_spin_lock(&sp);
-    tasks_queue.emplace_back(taskFuncPtr, arg);
-    pthread_spin_unlock(&sp);
   }
 };
 
