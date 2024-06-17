@@ -52,6 +52,18 @@ public:
     pthread_spin_unlock(&sp);
   }
 
+  inline bool EnqueTaskBasedOnAvailability(void *(*const taskFuncPtr)(void *),
+                                           void *const arg) noexcept {
+    pthread_spin_lock(&sp);
+    if (tasks_queue.size() >= total_threads) {
+      pthread_spin_unlock(&sp);
+      return false;
+    }
+    tasks_queue.emplace_back(taskFuncPtr, arg);
+    pthread_spin_unlock(&sp);
+    return true;
+  }
+
 private:
   struct Task {
     void *(*const taskFuncPtr)(void *);
