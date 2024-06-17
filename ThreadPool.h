@@ -7,6 +7,25 @@
 
 class ThreadPool {
 public:
+  inline void EnqueTask(void *(*const taskFuncPtr)(void *),
+                        void *const arg) noexcept {
+    pthread_spin_lock(&sp);
+    tasks_queue.emplace_back(taskFuncPtr, arg);
+    pthread_spin_unlock(&sp);
+  }
+
+  inline bool EnqueTaskBasedOnAvailability(void *(*const taskFuncPtr)(void *),
+                                           void *const arg) noexcept {
+    pthread_spin_lock(&sp);
+    if (tasks_queue.size() >= total_threads) {
+      pthread_spin_unlock(&sp);
+      return false;
+    }
+    tasks_queue.emplace_back(taskFuncPtr, arg);
+    pthread_spin_unlock(&sp);
+    return true;
+  }
+
   ThreadPool(int *cores_, int total_threads_)
       : cores(cores_), total_threads(total_threads_), core_iter(0),
         keep_running(true) {
@@ -43,25 +62,6 @@ public:
     delete[] threads;
 
     pthread_spin_destroy(&sp);
-  }
-
-  inline void EnqueTask(void *(*const taskFuncPtr)(void *),
-                        void *const arg) noexcept {
-    pthread_spin_lock(&sp);
-    tasks_queue.emplace_back(taskFuncPtr, arg);
-    pthread_spin_unlock(&sp);
-  }
-
-  inline bool EnqueTaskBasedOnAvailability(void *(*const taskFuncPtr)(void *),
-                                           void *const arg) noexcept {
-    pthread_spin_lock(&sp);
-    if (tasks_queue.size() >= total_threads) {
-      pthread_spin_unlock(&sp);
-      return false;
-    }
-    tasks_queue.emplace_back(taskFuncPtr, arg);
-    pthread_spin_unlock(&sp);
-    return true;
   }
 
 private:
