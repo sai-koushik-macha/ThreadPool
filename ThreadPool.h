@@ -27,7 +27,7 @@ class ThreadPool {
         return true;
     }
 
-    ThreadPool(int *cores_, int total_threads_)
+    ThreadPool(int const *const cores_, int const total_threads_)
         : cores(cores_),
           total_threads(total_threads_),
           core_iter(0),
@@ -79,7 +79,7 @@ class ThreadPool {
     const int total_threads;
     int core_iter;
     pthread_spinlock_t sp;
-    int *cores;
+    int const *const cores;
     pthread_t *threads;
     std::deque<Task> tasks_queue;
 
@@ -102,7 +102,7 @@ class ThreadPool {
         core_iter++;
         pthread_spin_unlock(&sp);
 
-        AssignCore(core_iter);
+        AssignCore(core);
 
         while (!start_running_tasks) {
         }
