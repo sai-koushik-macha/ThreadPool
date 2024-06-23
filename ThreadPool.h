@@ -108,18 +108,16 @@ class ThreadPool {
         }
 
         while (keep_running) {
-            void *(*taskFuncPtr)(void *);
+            void *(*taskFuncPtr)(void *) = nullptr;
             void *arg;
-            bool task_avaiable = false;
             pthread_spin_lock(&sp);
             if (tasks_queue.size() > 0) {
                 taskFuncPtr = tasks_queue.front().taskFuncPtr;
                 arg = tasks_queue.front().arg;
                 tasks_queue.pop_front();
-                task_avaiable = true;
             }
             pthread_spin_unlock(&sp);
-            if (task_avaiable) {
+            if (taskFuncPtr) {
                 taskFuncPtr(arg);
             }
         }
