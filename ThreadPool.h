@@ -10,13 +10,18 @@ class ThreadPool {
    public:
     inline void EnqueTask(void *(*const taskFuncPtr)(void *),
                           void *const arg) noexcept {
-        pthread_spin_lock(&sp);
-        tasks_queue.emplace_back(taskFuncPtr, arg);
-        pthread_spin_unlock(&sp);
+        if (taskFuncPtr) {
+            pthread_spin_lock(&sp);
+            tasks_queue.emplace_back(taskFuncPtr, arg);
+            pthread_spin_unlock(&sp);
+        }
     }
 
     inline bool EnqueTaskBasedOnAvailability(void *(*const taskFuncPtr)(void *),
                                              void *const arg) noexcept {
+        if (!taskFuncPtr) {
+            return false;
+        }
         pthread_spin_lock(&sp);
         if (tasks_queue.size() >= total_threads) {
             pthread_spin_unlock(&sp);
