@@ -101,7 +101,7 @@ class ThreadPool {
         pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
     }
 
-    inline void run() noexcept {
+    inline void AssignCoreHelper() noexcept {
         pthread_spin_lock(&sp);
         int core = cores[core_iter];
         core_iter++;
@@ -111,7 +111,12 @@ class ThreadPool {
 
         while (!start_running_tasks) {
         }
+    }
 
+    inline void run() noexcept {
+        AssignCoreHelper();
+
+        // Start the actual work
         while (keep_running) {
             void *(*taskFuncPtr)(void *) = nullptr;
             void *arg;
